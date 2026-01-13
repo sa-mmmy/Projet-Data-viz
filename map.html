@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Global ChatGPT Impact - Analyse Technique</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #ffffff; --sidebar-bg: #f8fafc; --text: #0f172a; --border: #e2e8f0; --accent: #0d9488; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        #sidebar { width: 250px; background: var(--sidebar-bg); padding: 25px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+        #back-btn { background: #fff; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; font-weight: 600; text-decoration: none; text-align: center; font-size: 14px; }
+        .sidebar-item { padding: 10px 14px; color: #64748b; text-decoration: none; border-radius: 8px; font-size: 14px; }
+        .sidebar-item.active { background: #f1f5f9; color: var(--accent); font-weight: 600; }
+
+        /* Main Content Scrollable */
+        #main-map { flex-grow: 1; display: flex; flex-direction: column; position: relative; overflow-y: auto; scroll-behavior: smooth; }
+        #header { padding: 25px 40px; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 10; }
+        
+        .controls-row { display: flex; gap: 20px; align-items: center; margin-top: 15px; }
+        .mode-btn { background: #f8fafc; border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+        .mode-btn.active { background: var(--text); color: white; border-color: var(--text); }
+        .req-input { width: 50px; padding: 6px; border-radius: 6px; border: 1px solid var(--border); font-weight: 700; text-align: center; color: var(--accent); }
+
+        .viz-container { display: flex; flex-grow: 1; min-height: 550px; border-bottom: 1px solid var(--border); }
+        
+        /* Légende Couleurs */
+        #legend-v { width: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #rainbow-bar { width: 12px; height: 250px; border-radius: 6px; position: relative; border: 1px solid var(--border); 
+                       background: linear-gradient(to top, #23171b, #4a58dd, #2ee5ae, #f9fb3e, #e54b0c, #900c00); }
+        .tick { position: absolute; left: 18px; font-size: 10px; font-weight: 700; color: #94a3b8; }
+
+        /* Section Explication & Analyse */
+        #analysis-section { padding: 40px 60px; background: #fcfcfd; border-top: 1px solid var(--border); }
+        .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; }
+        
+        .formula-box { grid-column: 1 / span 2; display: flex; align-items: center; gap: 15px; background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px; color: #475569; overflow-x: auto; margin-bottom: 20px; }
+        .formula-part { text-align: center; min-width: 80px; }
+        .formula-val { font-weight: 800; color: var(--text); font-size: 16px; display: block; margin-bottom: 4px; }
+        .formula-op { font-size: 20px; font-weight: 300; color: #cbd5e1; }
+
+        .info-card h3 { font-size: 1rem; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .info-card p { font-size: 0.95rem; line-height: 1.6; color: #475569; margin: 0; }
+
+        /* Context Panel */
+        #context-panel { width: 340px; border-left: 1px solid var(--border); padding: 30px; display: flex; flex-direction: column; gap: 15px; background: #fff; flex-shrink: 0; }
+        .card { background: #f8fafc; padding: 18px; border-radius: 16px; border: 1px solid var(--border); transition: 0.3s; }
+        .impact-num { font-size: 1.5rem; font-weight: 800; margin-top: 5px; }
+
+        .tooltip { position: absolute; opacity: 0; background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; pointer-events: none; z-index: 1000; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        .country { stroke: #fff; stroke-width: 0.2px; cursor: pointer; transition: 0.2s; }
+    </style>
+</head>
+<body>
+
+    <aside id="sidebar">
+        <a href="index.html" id="back-btn">← Retour Accueil</a>
+        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 10px 0;">Visualisations</div>
+        <a href="foret.html" class="sidebar-item">🌳 Dette Carbone</a>
+        <a href="Analytics.html" class="sidebar-item">📊 Dashboard </a>
+        <a href="Effects.html" class="sidebar-item">📈 le cout en Co2 , Energie et Eau </a>
+        <a href="map.html" class="sidebar-item active">🌍 Impact National</a>
+        <!-- <a href="water.html" class="sidebar-item">💧 Consommation Eau</a> -->
+    </aside>
+
+    <main id="main-map">
+        <div id="header">
+            <h1 style="font-size: 1.4rem; margin:0;">Dashboard d'Impact National</h1>
+            <div class="controls-row">
+                <div style="display:flex; gap:5px;">
+                    <button class="mode-btn active" onclick="setMode('Daily', this)">DAILY</button>
+                    <button class="mode-btn" onclick="setMode('Weekly', this)">WEEKLY</button>
+                    <button class="mode-btn" onclick="setMode('Monthly', this)">MONTHLY</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-left:20px; border-left: 1px solid var(--border); padding-left: 20px;">
+                    <span style="font-size:11px; font-weight:700; color:#64748b;">REQUÊTES / PERS :</span>
+                    <input type="number" id="req-count" class="req-input" value="5" min="1" oninput="updateAll()">
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-container">
+            <div id="legend-v">
+                <div style="font-size: 9px; font-weight: 800; margin-bottom: 5px; color: #94a3b8;">% USAGE</div>
+                <div id="rainbow-bar">
+                    <span class="tick" style="top:0">50%</span>
+                    <span class="tick" style="bottom:0">0%</span>
+                </div>
+            </div>
+            <svg id="map-svg"></svg>
+            <div id="tooltip" class="tooltip"></div>
+
+            <aside id="context-panel">
+                <div id="empty-state" style="text-align: center; color: #cbd5e1; margin-top: 50px;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:10px; opacity:0.5;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    <p>Cliquez sur un pays pour calculer l'impact de sa population.</p>
+                </div>
+                <div id="panel-data" style="display: none;">
+                    <h2 id="p-name" style="margin: 0; font-size: 1.6rem; color: var(--text);"></h2>
+                    <div id="p-pop" style="font-size: 12px; color: #64748b; margin-bottom: 20px;"></div>
+                    
+                    <div class="card" style="border-left: 4px solid #f59e0b; margin-bottom:10px;">
+                        <div style="font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase;">Énergie Totale</div>
+                        <div class="impact-num" id="p-elec" style="color: #b45309;">0 MWh</div>
+                    </div>
+    
+                    <div class="card" style="border-left: 4px solid #ef4444;">
+                        <div style="font-size: 10px; font-weight: 700; color: #991b1b; text-transform: uppercase;">Émissions CO₂</div>
+                        <div class="impact-num" id="p-co2" style="color: #b91c1c;">0 Tonnes</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <section id="analysis-section">
+            <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0 0 25px 0;">Méthodologie et Interprétation</h2>
+            
+            <div class="formula-box">
+                <div class="formula-part"><span class="formula-val">Population</span>Foyers du pays</div>
+                <div class="formula-op">×</div>
+                <div class="formula-part"><span class="formula-val">% Usage</span>Fréquence (CSV)</div>
+                <div class="formula-op">×</div>
+                <div class="formula-part"><span class="formula-val" id="formula-req">5</span>Requêtes / jour</div>
+                <div class="formula-op">×</div>
+                <div class="formula-part"><span class="formula-val" style="color:#b45309">10 Wh</span>Élec / requête</div>
+                <div class="formula-op">ou</div>
+                <div class="formula-part"><span class="formula-val" style="color:#b91c1c">2.33 g</span>CO₂ / requête</div>
+                <div class="formula-op">=</div>
+                <div class="formula-part" style="background: #f1f5f9; padding: 10px; border-radius: 8px;"><span class="formula-val">Impact National</span>Bilan Global</div>
+            </div>
+
+            <div class="analysis-grid">
+                <div class="info-card">
+                    <h3>🔍 Que représente cette image ?</h3>
+                    <p>
+                        Cette carte est un <b>modèle de simulation de montée en charge</b>. Elle illustre comment l'adoption massive de l'IA par des millions de citoyens transforme une action numérique légère en un défi énergétique majeur pour les infrastructures nationales. 
+                    </p>
+                </div>
+                <div class="info-card">
+                    <h3>🌈 Pourquoi ces couleurs ?</h3>
+                    <p>
+                        La palette <b>Turbo (Arc-en-ciel)</b> permet d'identifier les zones de "pression numérique". Plus un pays tend vers le rouge, plus sa population est active sur l'IA, augmentant mécaniquement la part de l'énergie consacrée aux serveurs de calcul.
+                    </p>
+                </div>
+            </div>
+            
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                *Note scientifique : Les coefficients (10Wh et 2.33g) sont des ordres de grandeur moyens permettant de sensibiliser à la matérialité de l'IA. Les données de population sont basées sur les recensements 2023.
+            </p>
+        </section>
+    </main>
+
+    <script>
+        // --- DONNÉES DE POPULATION ---
+        const populations = {
+            "India": 1408000000, "Pakistan": 235800000, "Kenya": 54000000, "China": 1412000000,
+            "Brazil": 214000000, "Indonesia": 273000000, "United States of America": 331000000,
+            "South Africa": 60000000, "Mexico": 126000000, "Canada": 38000000, "France": 67000000,
+            "Spain": 47000000, "United Kingdom": 67000000, "Poland": 38000000, "Portugal": 10000000,
+            "Chile": 19000000, "Argentina": 45000000, "Germany": 83000000, "Italy": 59000000,
+            "Australia": 25000000, "Japan": 125000000
+        };
+
+        const svg = d3.select("#map-svg");
+        let currentMode = 'Daily', usageData = {}, selectedCountry = null;
+        const colorScale = d3.scaleSequential(d3.interpolateTurbo).domain([0, 50]);
+
+        Promise.all([
+            d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json"),
+            d3.csv("data/frequency_by_country.csv")
+        ]).then(([world, data]) => {
+            const nameMap = { "U.S.": "United States of America", "S. Africa": "South Africa", "UK": "United Kingdom" };
+            data.forEach(d => { usageData[nameMap[d.Country] || d.Country] = d; });
+
+            const countries = topojson.feature(world, world.objects.countries).features;
+            const projection = d3.geoNaturalEarth1().scale(160).translate([400, 280]);
+            const path = d3.geoPath().projection(projection);
+
+            svg.attr("viewBox", "0 0 800 550")
+               .append("g").selectAll("path").data(countries).enter().append("path")
+               .attr("class", "country")
+               .attr("d", path)
+               .attr("fill", d => getColor(d))
+               .attr("stroke", "#fff").attr("stroke-width", "0.2")
+               .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip)
+               .on("click", (e, d) => { selectedCountry = d; updatePanel(d); });
+        });
+
+        function getColor(d) {
+            const val = usageData[d.properties.name] ? usageData[d.properties.name][currentMode] : null;
+            return val ? colorScale(val) : "#f8fafc";
+        }
+
+        window.setMode = (mode, btn) => {
+            currentMode = mode;
+            d3.selectAll(".mode-btn").classed("active", false);
+            d3.select(btn).classed("active", true);
+            updateAll();
+        };
+
+        window.updateAll = () => {
+            const reqVal = d3.select("#req-count").property("value");
+            d3.select("#formula-req").text(reqVal);
+            svg.selectAll(".country").transition().duration(600).attr("fill", d => getColor(d));
+            if(selectedCountry) updatePanel(selectedCountry);
+        };
+
+        function updatePanel(d) {
+            const name = d.properties.name, data = usageData[name], pop = populations[name];
+            if(!data || !pop) return;
+
+            d3.select("#empty-state").style("display", "none");
+            d3.select("#panel-data").style("display", "block");
+            d3.select("#p-name").text(name);
+            d3.select("#p-pop").text("Population : " + pop.toLocaleString());
+
+            const reqs = +d3.select("#req-count").property("value");
+            const activeUsers = pop * (data[currentMode] / 100);
+            
+            const totalElecWh = activeUsers * reqs * 10;
+            const totalCO2g = activeUsers * reqs * 2.33;
+
+            d3.select("#p-elec").text((totalElecWh / 1000000).toFixed(2) + " MWh");
+            d3.select("#p-co2").text((totalCO2g / 1000000).toFixed(2) + " Tonnes");
+
+            svg.selectAll(".country").style("stroke", "#fff").style("stroke-width", "0.2");
+            svg.selectAll(".country").filter(c => c.properties.name === name).style("stroke", "#0f172a").style("stroke-width", "1.2").raise();
+        }
+
+        function showTooltip(e, d) {
+            const name = d.properties.name;
+            const val = usageData[name] ? usageData[name][currentMode] + '%' : 'N/A';
+            d3.select("#tooltip").style("opacity", 1).html(`<b>${name}</b> : ${val}`);
+            d3.select(e.target).style("stroke", "#0f172a").style("stroke-width", "0.8");
+        }
+        function moveTooltip(e) { d3.select("#tooltip").style("left", (e.pageX+10)+"px").style("top", (e.pageY-10)+"px"); }
+        function hideTooltip(e) { 
+            d3.select("#tooltip").style("opacity", 0); 
+            const d = d3.select(e.target).datum();
+            if(!selectedCountry || d.properties.name !== selectedCountry.properties.name) {
+                d3.select(e.target).style("stroke", "#fff").style("stroke-width", "0.2");
+            }
+        }
+    </script>
+</body>
+</html>

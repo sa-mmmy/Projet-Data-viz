@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyse Impact Environnemental IA</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff; --sidebar-bg: #f8fafc; --text-main: #0f172a;
+      --text-muted: #64748b; --border: #e2e8f0;
+      --carbon: #22c55e; --elec: #eab308; --water: #3b82f6; --accent: #6366f1;
+    }
+
+    body { margin: 0; background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    #sidebar { width: 260px; background: var(--sidebar-bg); padding: 25px; border-right: 1px solid var(--border); flex-shrink: 0; }
+    #back-btn { background: #fff; border: 1px solid var(--border); color: var(--text-main); padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
+    .sidebar-item { padding: 10px 14px; color: var(--text-muted); text-decoration: none; border-radius: 8px; font-size: 14px; display: block; margin-bottom: 5px; }
+    .sidebar-item.active { background: #f1f5f9; color: var(--text-main); font-weight: 600; }
+
+    /* Main Area Scrollable */
+    #main-zone { flex: 1; overflow-y: auto; padding: 40px; scroll-behavior: smooth; }
+    
+    .section-container { max-width: 1100px; margin: 0 auto 100px auto; }
+    .header-block { margin-bottom: 40px; text-align: center; }
+    
+    .viz-card { background: #fff; border: 1px solid var(--border); border-radius: 24px; padding: 35px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 30px; position: relative; }
+
+    /* Layout Alterné Texte/Graphique */
+    .split-layout { display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
+    .split-layout.reverse { grid-template-columns: 300px 1fr; }
+
+    /* Styling Graphiques */
+    .axis-title { font-size: 11px; font-weight: 800; fill: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .axis-label { font-size: 10px; font-weight: 700; fill: var(--text-muted); }
+    .grid line { stroke: #f1f5f9; }
+    
+    /* Légendes Interactives */
+    .legend-row { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; }
+    .pill { padding: 8px 16px; border-radius: 100px; font-size: 11px; font-weight: 800; cursor: pointer; opacity: 0.3; transition: 0.3s; color: white; border: none; }
+    .pill.active { opacity: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+    .analysis-box { background: #f8fafc; padding: 25px; border-radius: 16px; border: 1px solid var(--border); }
+    .analysis-box h3 { margin: 0 0 10px 0; font-size: 1rem; border-bottom: 2px solid var(--border); padding-bottom: 5px; }
+    .analysis-box p { font-size: 0.9rem; line-height: 1.6; color: #475569; }
+
+    /* Info Pane (Bar Chart) */
+    #info-pane {
+      margin-top: 20px; background: #f1f5f9; padding: 0; max-height: 0; overflow: hidden; border-radius: 16px;
+      transition: all 0.5s ease;
+    }
+    #info-pane.visible { padding: 20px; max-height: 200px; border: 1px solid var(--border); }
+
+    .tooltip { position: absolute; opacity: 0; background: #1e293b; color: white; padding: 10px; border-radius: 8px; font-size: 11px; pointer-events: none; z-index: 1000; }
+  </style>
+</head>
+<body>
+
+  <aside id="sidebar">
+      <a href="index.html" id="back-btn">← Accueil</a>
+      <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 15px;">Analyses</div>
+      <a href="foret.html" class="sidebar-item">🌳 Dette Carbone (Forêt)</a>
+      <a href="Analytics.html" class="sidebar-item">📊 Dashboard</a>
+      <a href="#" class="sidebar-item active">📈 Coût Co2, Élec & Eau</a>
+      <a href="map.html" class="sidebar-item">🌍 Carte Mondiale</a>
+  </aside>
+
+  <main id="main-zone">
+
+    <section id="section-bars" class="section-container">
+        <div class="header-block">
+            <h1>Comparaison des Émissions CO₂e</h1>
+            <p style="color: var(--text-muted);">Impact annuel de GPT-4o face aux activités humaines standards.</p>
+        </div>
+
+        <div class="split-layout">
+            <div class="viz-card">
+                <svg id="barChart" width="650" height="450"></svg>
+                
+                <div id="info-pane">
+                    <h4 id="info-title" style="margin:0; font-size:11px; color:var(--carbon); text-transform:uppercase;">Détails</h4>
+                    <div id="info-val" style="font-size: 18px; font-weight: 800; margin: 5px 0;"></div>
+                    <p id="info-desc" style="margin:0; font-size: 13px; color: var(--text-muted); line-height: 1.5;"></p>
+                </div>
+            </div>
+            <div class="analysis-box">
+                <h3>01. Analyse des Échelles</h3>
+                <p>Ce graphique met en perspective l'empreinte carbone massive de l'IA.</p>
+                <p>Notez l'écart colossal entre une voiture thermique (5T) et l'inférence annuelle d'un modèle comme GPT-4o (>130 000T).</p>
+                <p><b>Astuce :</b> Cliquez sur les barres pour obtenir le détail précis de chaque catégorie.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="section-line" class="section-container">
+        <div class="header-block">
+            <h1>Projection Temporelle Logarithmique</h1>
+            <p style="color: var(--text-muted);">Cumul des ressources consommées selon l'horizon temporel.</p>
+        </div>
+
+        <div class="legend-row">
+            <button class="pill active" id="p-elec" style="background: var(--elec);" onclick="toggleMetric('elec')">⚡ ÉLEC (MWh)</button>
+            <button class="pill active" id="p-carbon" style="background: var(--carbon);" onclick="toggleMetric('carbon')">🌱 CARBONE (kg)</button>
+            <button class="pill active" id="p-water" style="background: var(--water);" onclick="toggleMetric('water')">💧 EAU (m³)</button>
+        </div>
+
+        <div class="split-layout reverse">
+            <div class="analysis-box">
+                <h3>02. Dynamique Temporelle</h3>
+                <p>L'utilisation d'une échelle logarithmique permet de visualiser la croissance exponentielle sans écraser les données initiales (minutes vs années).</p>
+                <p>Les bandes d'incertitude (±10x) reflètent la variabilité de l'efficacité des data centers mondiaux.</p>
+            </div>
+            <div class="viz-card">
+                <svg id="lineChart" width="650" height="400"></svg>
+            </div>
+        </div>
+    </section>
+
+    <div id="tooltip" class="tooltip"></div>
+  </main>
+
+  <script>
+    /* --- DATASETS --- */
+    
+    // TOUTES LES 8 DONNÉES RESTAURÉES
+    const barData = [
+      { l: "1 Voiture (USA)", v: 5, c: "#cbd5e1", desc: "Émissions moyennes d'une voiture thermique américaine sur un an." },
+      { l: "1 Vol BOS-LHR", v: 60, c: "#cbd5e1", desc: "Impact carbone d'un trajet aller simple Boston-Londres." },
+      { l: "100 Acres Forêt", v: 100, c: "#94a3b8", desc: "Quantité de CO2 absorbée par 404 686 m² de forêt par an." },
+      { l: "2,300 Vols", v: 137531, c: "#64748b", desc: "Équivalent d'un trafic aérien massif groupé." },
+      { l: "113k Litres Essence", v: 138000, c: "#475569", desc: "Émissions générées par la combustion de 30 000 gallons d'essence." },
+      { l: "138k Acres Forêt", v: 138000, c: "#334155", desc: "La surface de forêt nécessaire pour compenser l'estimation basse de GPT-4o." },
+      { l: "GPT-4o (Min)", v: 138125, c: "#22c55e", desc: "Estimation minimale des émissions liées à l'inférence annuelle de GPT-4o." },
+      { l: "GPT-4o (Max)", v: 163441, c: "#15803d", desc: "Estimation maximale de la consommation de carbone pour faire tourner le modèle en 2025." }
+    ];
+
+    const Q_DAY = 2.5e9, CO2_G = 2.33, WH = 10, WATER_MIN = 102972;
+    const timeS = [{l:"1 min", m:1}, {l:"1 h", m:60}, {l:"1 jour", m:1440}, {l:"1 mois", m:43200}, {l:"1 an", m:525600}];
+    const lineMetrics = {
+        elec: { color: "#eab308", label: "Électricité", unit: "MWh", visible: true },
+        carbon: { color: "#22c55e", label: "Carbone", unit: "kg", visible: true },
+        water: { color: "#3b82f6", label: "Eau", unit: "m³", visible: true }
+    };
+
+    /* --- RENDER BAR CHART --- */
+    const bSvg = d3.select("#barChart"), bMargin = {top:20, right:20, bottom:100, left:60}; // Bottom augmenté pour labels inclinés
+    const bW = 650 - bMargin.left - bMargin.right, bH = 450 - bMargin.top - bMargin.bottom;
+    const bg = bSvg.append("g").attr("transform", `translate(${bMargin.left},${bMargin.top})`);
+
+    const bx = d3.scaleBand().range([0, bW]).domain(barData.map(d=>d.l)).padding(0.3);
+    const by = d3.scaleLinear().range([bH, 0]).domain([0, d3.max(barData, d=>d.v)*1.1]);
+
+    // Grille
+    bg.append("g").attr("class", "grid").call(d3.axisLeft(by).ticks(5).tickSize(-bW).tickFormat(""));
+
+    // Barres
+    bg.selectAll("rect").data(barData).enter().append("rect")
+      .attr("x", d=>bx(d.l)).attr("y", d=>by(d.v)).attr("width", bx.bandwidth()).attr("height", d=>bH - by(d.v))
+      .attr("fill", d=>d.c).attr("rx", 4)
+      .style("cursor", "pointer")
+      .on("mouseover", function() { d3.select(this).style("opacity", 0.8); })
+      .on("mouseout", function() { d3.select(this).style("opacity", 1); })
+      .on("click", (e, d) => {
+          d3.select("#info-pane").classed("visible", true);
+          d3.select("#info-title").text(d.label.replace(/\n/g, " "));
+          d3.select("#info-val").text(d.value.toLocaleString() + " T CO₂e");
+          d3.select("#info-desc").text(d.desc);
+      });
+
+    // Valeurs sur barres (Format compact pour éviter chevauchement)
+    bg.selectAll(".val").data(barData).enter().append("text")
+      .attr("class", "axis-label")
+      .attr("x", d=>bx(d.l)+bx.bandwidth()/2).attr("y", d=>by(d.v)-5)
+      .attr("text-anchor", "middle")
+      .style("font-weight", "800")
+      .text(d => d.v > 1000 ? d3.format(".2s")(d.v) : d.v);
+
+    // Axes Bar
+    bg.append("g").attr("transform", `translate(0,${bH})`).call(d3.axisBottom(bx).tickSize(0).tickPadding(10))
+      .selectAll("text")
+      .attr("class", "axis-label")
+      .style("text-anchor", "end")
+      .attr("dx", "-0.8em").attr("dy", "0.15em")
+      .attr("transform", "rotate(-30)"); // Rotation des labels pour lisibilité
+
+    bg.append("g").call(d3.axisLeft(by).ticks(5, "~s")).selectAll("text").attr("class", "axis-label");
+    bg.append("text").attr("class", "axis-title").attr("transform", "rotate(-90)").attr("y", -45).attr("x", -bH/2).attr("text-anchor", "middle").text("Tonnes CO₂e");
+
+    /* --- RENDER LINE CHART --- */
+    const lSvg = d3.select("#lineChart"), lMargin = {top:20, right:30, bottom:50, left:60};
+    const lW = 650 - lMargin.left - lMargin.right, lH = 400 - lMargin.top - lMargin.bottom;
+    const lg = lSvg.append("g").attr("transform", `translate(${lMargin.left},${lMargin.top})`);
+
+    const lData = timeS.map(d => {
+        const q = (Q_DAY / 1440) * d.m;
+        return { time: d.l, carbon: (q * CO2_G) / 1000, elec: (q * WH) / 1e6, water: (WATER_MIN * d.m) / 1000 };
+    });
+
+    const lx = d3.scalePoint().domain(lData.map(d => d.time)).range([0, lW]);
+    const ly = d3.scaleLog().domain([1, d3.max(lData, d => d.carbon) * 100]).range([lH, 0]);
+
+    lg.append("g").attr("class", "grid").call(d3.axisLeft(ly).ticks(10).tickSize(-lW).tickFormat(""));
+
+    Object.keys(lineMetrics).forEach(key => {
+        const m = lineMetrics[key];
+        const group = lg.append("g").attr("id", `g-${key}`);
+        group.append("path").datum(lData).attr("fill", m.color).style("opacity", 0.15)
+             .attr("d", d3.area().x(d => lx(d.time)).y0(d => ly(d[key]/10)).y1(d => ly(d[key]*10)).curve(d3.curveMonotoneX));
+        group.append("path").datum(lData).attr("fill", "none").attr("stroke", m.color).attr("stroke-width", 3)
+             .attr("d", d3.line().x(d => lx(d.time)).y(d => ly(d[key])).curve(d3.curveMonotoneX));
+        
+        // Tooltip interaction
+        group.selectAll(".dot").data(lData).enter().append("circle")
+            .attr("cx", d => lx(d.time)).attr("cy", d => ly(d[key])).attr("r", 5).attr("fill", m.color)
+            .on("mouseover", (e, d) => showTooltip(e, d, key))
+            .on("mouseout", hideTooltip);
+    });
+
+    lg.append("g").attr("transform", `translate(0,${lH})`).call(d3.axisBottom(lx).tickSize(0).tickPadding(15)).selectAll("text").attr("class", "axis-label");
+    lg.append("g").call(d3.axisLeft(ly).ticks(5, "~s")).selectAll("text").attr("class", "axis-label");
+    lg.append("text").attr("class", "axis-title").attr("x", lW/2).attr("y", lH + 40).attr("text-anchor", "middle").text("Horizon Temporel");
+
+    window.toggleMetric = (key) => {
+        lineMetrics[key].visible = !lineMetrics[key].visible;
+        d3.select(`#g-${key}`).transition().duration(400).style("opacity", lineMetrics[key].visible ? 1 : 0);
+        d3.select(`#p-${key}`).classed("active", lineMetrics[key].visible);
+    };
+
+    function showTooltip(e, d, key) {
+        const m = lineMetrics[key];
+        d3.select("#tooltip").style("opacity", 1)
+          .html(`<b>${d.time}</b><br><span style="color:${m.color}">●</span> ${m.label}: <b>${d3.format(",.0f")(d[key])} ${m.unit}</b>`)
+          .style("left", (e.pageX + 15) + "px").style("top", (e.pageY - 20) + "px");
+    }
+    function hideTooltip() { d3.select("#tooltip").style("opacity", 0); }
+  </script>
+</body>
+</html>

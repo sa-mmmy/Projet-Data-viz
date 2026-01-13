@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simu ChatGPT — Analyse écologique</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* --- CSS STYLE HARMONISÉ (WHITE MODERN) --- */
+    :root {
+      --bg: #ffffff;
+      --sidebar-bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --accent-teal: #0d9488;
+      --input-bg: #f4f4f4;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar Style ChatGPT Modern */
+    #sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #new-chat {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: 0.2s ease;
+      font-weight: 600;
+      text-align: left;
+      font-size: 14px;
+    }
+    #new-chat:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+    .sidebar-section {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-top: 15px;
+      margin-bottom: 5px;
+      padding-left: 14px;
+    }
+
+    .sidebar-item {
+      padding: 10px 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: 0.2s;
+      font-size: 14px;
+      display: block;
+    }
+    .sidebar-item:hover { background: #f1f5f9; color: var(--text-main); }
+    .sidebar-item.active { background: #f1f5f9; color: var(--accent-teal); font-weight: 600; }
+
+    /* Zone Principale */
+    #main-zone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Topbar */
+    #topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 25px;
+      border-bottom: 1px solid transparent;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    #model-selector { cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: 0.2s; }
+    #model-selector:hover { background: #f1f5f9; color: var(--text-main); }
+
+    /* Centre */
+    #home-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 20px;
+    }
+    #welcome-title {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    /* Barre d'input */
+    #input-bar {
+      width: 100%;
+      max-width: 750px;
+      margin: 0 auto 40px auto;
+      padding: 0 20px;
+    }
+    #input-wrapper {
+      background: var(--input-bg);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      transition: 0.3s;
+    }
+    #input-wrapper:focus-within {
+      background: #ffffff;
+      box-shadow: 0 0 0 2px var(--border);
+    }
+    #globalInput {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 12px;
+      font-size: 16px;
+      outline: none;
+      font-family: inherit;
+    }
+    #globalSend {
+      background: var(--text-main);
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    #global-disclaimer {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 15px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <aside id="sidebar">
+      <button id="new-chat">+ Nouveau chat</button>
+
+      <div class="sidebar-section">Général</div>
+      <a href="#" class="sidebar-item">Explorer</a>
+      <a href="#" class="sidebar-item">Bibliothèque</a>
+
+      <div class="sidebar-section">Projet Data Viz</div>
+      <a href="foret.html" class="sidebar-item">🌳 Dette Carbone (Forêt)</a>
+      <a href="Analytics.html" class="sidebar-item">📊 Dashboard </a>
+      <a href="Effects.html" class="sidebar-item">📈 le cout en Co2 , Energie et Eau</a>
+      <a href="map.html" class="sidebar-item">🌍 Carte Mondiale</a>
+      <!-- <a href="water.html" class="sidebar-item">💧 Consommation Eau</a> -->
+  </aside>
+
+  <main id="main-zone">
+
+    <header id="topbar">
+      <div id="model-selector">ChatGPT DataViz 4.0</div>
+      <div id="menu-icons">
+        <span style="font-size: 14px; cursor:pointer;">Partager</span>
+      </div>
+    </header>
+
+    <section id="home-center">
+      <h1 id="welcome-title">Bonjour, quel impact écologique voulez-vous analyser aujourd'hui ?</h1>
+    </section>
+
+    <div id="input-bar">
+      <div id="input-wrapper">
+        <input id="globalInput" type="text" placeholder="Poser une question sur les données…" autocomplete="off">
+        <button id="globalSend">↑</button>
+      </div>
+      <p id="global-disclaimer">Ce dashboard utilise des données synthétiques pour illustrer l'impact environnemental de l'IA.</p>
+    </div>
+
+  </main>
+
+  <script src="js/script.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+/* GLOBAL ----------------------------------------------------- */
+body {
+  margin: 0;
+  background: #ffffff;
+  font-family: system-ui, sans-serif;
+  color: #111;
+  min-height: 100vh;
+  display: flex;
+  overflow: auto;
+}
+
+.hidden { display: none; }
+
+/* SIDEBAR ---------------------------------------------------- */
+#sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#new-chat {
+  background: #f3f4f6;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.sidebar-section {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+.sidebar-item {
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sidebar-item:hover {
+  background: #f3f4f6;
+}
+
+/* MAIN -------------------------------------------------------- */
+#main-zone {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Page title styling (thermo page uses an h2) */
+#main-zone h2 {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin: 24px 0 12px;
+}
+
+/* Date range controls */
+.date-controls {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0 24px;
+  flex-wrap: wrap;
+}
+
+.date-controls label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.date-controls input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.date-controls input[type="date"]:hover {
+  border-color: #9ca3af;
+}
+
+.date-controls input[type="date"]:focus {
+  outline: none;
+  border-color: #4e79a7;
+  box-shadow: 0 0 0 3px rgba(78, 121, 167, 0.1);
+}
+
+/* (Title removed in barchart.html) */
+
+/* TOP BAR ----------------------------------------------------- */
+#topbar {
+  height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+#home-center {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 120px;
+}
+
+#welcome-title {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+/* BARRE EN BAS -------------------------------------------------- */
+#input-bar {
+  position: absolute;
+  bottom: 0;
+  left: 260px;
+  right: 0;
+  padding: 16px 24px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+#input-wrapper {
+  display: flex;
+  background: white;
+  padding: 14px 22px;
+  border-radius: 40px;
+  border: 1px solid #dcdcdc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+#globalInput {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+}
+
+#globalSend {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#global-disclaimer {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.55;
+  margin-top: 10px;
+}
+
+
+/* Ensure SVG stays centered */
+#usage-bar-chart svg {
+  display: block;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+/* === Download button === */
+.download-btn {
+  margin-top: 24px;
+  padding: 10px 20px;
+
+  width: auto !important;
+  display: inline-block !important;
+
+  /* Match Tableau blue used in pie chart */
+  background: #4e79a7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.download-btn:hover {
+  background-color: #3b5f8a;
+}
+
+#usage-bar-chart svg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Center thermometer SVG and keep white background */
+#thermometer svg {
+  display: block;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+#thermometer {
+  margin-top: 32px;
+}
+
+/* Wrapper to align button relative to chart width */
+.chart-actions {
+  width: 600px; /* matches SVG total width */
+  margin: 8px auto 0; /* center wrapper under chart */
+  text-align: left; /* align button to the left inside wrapper */
+  padding-left: 1cm; /* shift button 1cm to the right */
+}
+
+/* Centered actions for thermometer page */
+.thermo-actions {
+  width: fit-content;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Metric toggle buttons */
+.metric-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 24px 0 32px;
+  flex-wrap: wrap;
+}
+
+.metric-btn {
+  padding: 10px 20px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.metric-btn:hover {
+  border-color: #4e79a7;
+  color: #4e79a7;
+  background: #f0f9ff;
+}
+
+.metric-btn.active {
+  background: #4e79a7;
+  color: #ffffff;
+  border-color: #4e79a7;
+}
+
+/* Centered actions for timeseries page */
+.timeseries-actions {
+  width: fit-content;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Push chart a little lower on the page */
+#usage-bar-chart {
+  margin-top: 64px;
+}
+

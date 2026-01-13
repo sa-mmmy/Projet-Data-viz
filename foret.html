@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impact Carbone - Simulation Interactive</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --sidebar-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-danger: #f43f5e;
+            --accent-warning: #f59e0b;
+            --border: #e2e8f0;
+            --glass: rgba(255, 255, 255, 0.7);
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg-gradient); 
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* --- SIDEBAR CORRIGÉE --- */
+        #sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.02);
+            z-index: 100;
+            flex-shrink: 0; /* Empêche le rétrécissement */
+        }
+
+        #back-btn {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.3s ease;
+        }
+        #back-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        .nav-label {
+            font-size: 11px; color: var(--text-muted); font-weight: 700; 
+            text-transform: uppercase; letter-spacing: 1.5px; margin-top: 20px; margin-bottom: 10px;
+        }
+
+        .nav-item {
+            padding: 12px 16px; color: var(--text-muted); text-decoration: none;
+            border-radius: 12px; font-size: 14px; font-weight: 500;
+            transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .nav-item:hover { background: #f1f5f9; color: var(--text-main); }
+        .nav-item.active { background: #ecfdf5; color: var(--accent-green); font-weight: 700; }
+
+        /* --- MAIN AREA --- */
+        #main-content {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- UI PANEL --- */
+        #ui-panel {
+            position: absolute;
+            top: 40px; right: 40px;
+            width: 340px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            z-index: 10;
+        }
+
+        .ui-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+        .ui-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .big-number { font-size: 3rem; font-weight: 800; line-height: 1; color: var(--text-main); }
+        .unit { font-size: 1rem; color: var(--text-muted); font-weight: 600; }
+
+        /* SLIDER CUSTOM */
+        .slider-wrapper { margin: 25px 0; }
+        input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: #e2e8f0; border-radius: 10px; }
+        input[type=range]::-webkit-slider-thumb { height: 24px; width: 24px; border-radius: 50%; background: var(--accent-green); cursor: pointer; -webkit-appearance: none; margin-top: -8px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); transition: transform 0.2s; border: 2px solid white; }
+        input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.1); }
+
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(0,0,0,0.05); }
+        .stat-card { background: rgba(255,255,255,0.6); padding: 15px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.8); }
+        .stat-val { font-size: 1.5rem; font-weight: 800; display: block; margin-bottom: 4px; }
+        .stat-desc { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+        .info-box { margin-top: 20px; background: #fff7ed; color: #9a3412; padding: 15px; border-radius: 12px; font-size: 12px; line-height: 1.6; border: 1px solid #ffedd5; }
+        svg { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body>
+
+    <aside id="sidebar">
+        <a href="index.html" id="back-btn">← Accueil</a>
+        
+        <div class="nav-label">Navigation</div>
+        <a href="#" class="nav-item active">🌳 Simulateur Forêt</a>
+        <a href="Analytics.html" class="nav-item">📊 Dashboard & Stats</a>
+        <a href="combined.html" class="nav-item">📈 Analyse Temporelle</a>
+        <a href="map.html" class="nav-item">🌍 Carte Mondiale</a>
+    </aside>
+
+    <main id="main-content">
+        <div id="ui-panel">
+            <div class="ui-label">Empreinte Simulée</div>
+            <div class="ui-header">
+                <div>
+                    <span id="co2-display" class="big-number">0</span>
+                    <span class="unit">grammes CO₂</span>
+                </div>
+            </div>
+
+            <div class="slider-wrapper">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:600;">
+                    <span>Requêtes IA</span>
+                    <span id="req-count" style="color:var(--accent-green)">0</span>
+                </div>
+                <input type="range" id="query-slider" min="0" max="2000" step="10" value="0">
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span id="trees-lost" class="stat-val" style="color:var(--accent-danger)">0</span>
+                    <span class="stat-desc">Arbres Saturés</span>
+                </div>
+                <div class="stat-card">
+                    <span id="percent-capacity" class="stat-val" style="color:var(--text-main)">0%</span>
+                    <span class="stat-desc">Capacité Forêt</span>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>La règle du 2.33g :</strong><br>
+                Une requête ChatGPT standard émet <b>2.33g de CO₂</b>. Un arbre mature absorbe <b>68g/jour</b>. 
+                <br>Chaque fois que vous saturez un arbre, il devient gris.
+            </div>
+        </div>
+
+        <div id="forest-viz"></div>
+    </main>
+
+    <script>
+        const CO2_PER_REQ = 2.33;
+        const CO2_TREE_CAPACITY = 68;
+
+        const container = document.getElementById('forest-viz');
+        const width = container.clientWidth;
+        const height = window.innerHeight;
+        
+        const svg = d3.select("#forest-viz").append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("viewBox", `0 0 ${width} ${height}`);
+
+        const treeCount = 150; 
+        let forestData = [];
+        
+        for(let i=0; i<treeCount; i++) {
+            forestData.push({
+                id: i,
+                x: Math.random() * (width - 100) + 50,
+                y: Math.random() * (height - 100) + 50,
+                scale: 0.5 + Math.random() * 0.6,
+                type: Math.floor(Math.random() * 3),
+                isDead: false
+            });
+        }
+        
+        forestData.sort((a, b) => a.y - b.y);
+
+        function drawTree(selection) {
+            selection.each(function(d) {
+                const g = d3.select(this);
+                
+                g.append("ellipse").attr("cx", 0).attr("cy", 5).attr("rx", 15).attr("ry", 4).attr("fill", "rgba(0,0,0,0.1)");
+                g.append("path").attr("class", "trunk").attr("d", "M -4 0 L 4 0 L 6 -20 L -6 -20 Z").attr("fill", "#5D4037");
+
+                const colors = [
+                    ["#10b981", "#059669", "#047857"],
+                    ["#84cc16", "#65a30d", "#4d7c0f"],
+                    ["#22c55e", "#16a34a", "#15803d"]
+                ];
+                const palette = colors[d.type];
+
+                g.append("circle").attr("class", "leaf l1").attr("r", 14).attr("cy", -25).attr("cx", -10).attr("fill", palette[0]);
+                g.append("circle").attr("class", "leaf l2").attr("r", 14).attr("cy", -25).attr("cx", 10).attr("fill", palette[0]);
+                g.append("circle").attr("class", "leaf l3").attr("r", 18).attr("cy", -35).attr("cx", 0).attr("fill", palette[1]);
+                g.append("circle").attr("class", "leaf l4").attr("r", 12).attr("cy", -45).attr("cx", 0).attr("fill", palette[2]);
+            });
+        }
+
+        const treeGroup = svg.selectAll(".tree-wrapper")
+            .data(forestData).enter().append("g")
+            .attr("class", "tree-wrapper")
+            .attr("transform", d => `translate(${d.x},${d.y}) scale(${d.scale})`)
+            .call(drawTree);
+
+        const slider = document.getElementById('query-slider');
+        const uiReq = document.getElementById('req-count');
+        const uiCo2 = document.getElementById('co2-display');
+        const uiDead = document.getElementById('trees-lost');
+        const uiPercent = document.getElementById('percent-capacity');
+
+        let currentDeadIds = new Set();
+
+        function updateSimulation(val) {
+            const queries = parseInt(val);
+            const totalCo2 = queries * CO2_PER_REQ;
+            const treesNeeded = Math.floor(totalCo2 / CO2_TREE_CAPACITY);
+            
+            uiReq.innerText = queries.toLocaleString();
+            uiCo2.innerText = totalCo2.toFixed(1);
+            uiDead.innerText = treesNeeded;
+            
+            const percent = Math.min(100, (treesNeeded / treeCount) * 100);
+            uiPercent.innerText = percent.toFixed(0) + "%";
+
+            while(currentDeadIds.size < treesNeeded && currentDeadIds.size < treeCount) {
+                let candidate;
+                do { candidate = Math.floor(Math.random() * treeCount); } 
+                while (currentDeadIds.has(candidate));
+                currentDeadIds.add(candidate);
+                animateTreeDeath(candidate);
+            }
+
+            if(currentDeadIds.size > treesNeeded) {
+                const deadArray = Array.from(currentDeadIds);
+                while(currentDeadIds.size > treesNeeded) {
+                    const indexToRemove = deadArray.pop();
+                    currentDeadIds.delete(indexToRemove);
+                    animateTreeLife(indexToRemove);
+                }
+            }
+        }
+
+        function animateTreeDeath(id) {
+            const group = svg.selectAll(".tree-wrapper").filter(d => d.id === id);
+            group.selectAll(".leaf").transition().duration(400).attr("fill", "#f59e0b").transition().delay(400).duration(800).attr("fill", "#64748b");
+            group.select(".trunk").transition().delay(400).duration(800).attr("fill", "#475569");
+        }
+
+        function animateTreeLife(id) {
+            const group = svg.selectAll(".tree-wrapper").filter(d => d.id === id);
+            const d = group.datum();
+            const colors = [["#10b981", "#059669", "#047857"], ["#84cc16", "#65a30d", "#4d7c0f"], ["#22c55e", "#16a34a", "#15803d"]];
+            const palette = colors[d.type];
+            group.select(".l1").transition().duration(800).attr("fill", palette[0]);
+            group.select(".l2").transition().duration(800).attr("fill", palette[0]);
+            group.select(".l3").transition().duration(800).attr("fill", palette[1]);
+            group.select(".l4").transition().duration(800).attr("fill", palette[2]);
+            group.select(".trunk").transition().duration(800).attr("fill", "#5D4037");
+        }
+
+        slider.addEventListener('input', (e) => updateSimulation(e.target.value));
+
+        svg.selectAll(".tree-wrapper")
+            .attr("opacity", 0)
+            .attr("transform", d => `translate(${d.x},${d.y + 50}) scale(0)`)
+            .transition().delay((d, i) => i * 5).duration(800)
+            .attr("opacity", 1)
+            .attr("transform", d => `translate(${d.x},${d.y}) scale(${d.scale})`);
+    </script>
+</body>
+</html>
